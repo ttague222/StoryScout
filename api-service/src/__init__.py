@@ -1,0 +1,3 @@
+"""
+StoryScout API Service
+"""

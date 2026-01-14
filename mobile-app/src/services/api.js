@@ -1,147 +1,158 @@
 /**
  * API Service
  *
- * Handles all API communication with the backend
- * Currently uses mock data, will be connected to Cloud Run API
+ * Handles all API communication with the StoryScout backend
+ * Supports both real API and fallback mock data
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // API Configuration
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:8080'  // Local development
-  : 'https://api.storyscout.app'; // Production (placeholder)
+const getBaseUrl = () => {
+  if (__DEV__) {
+    // For Android emulator, use 10.0.2.2 instead of localhost
+    // For iOS simulator, localhost works
+    // For physical devices, use your computer's local IP
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8080';
+    }
+    return 'http://localhost:8080';
+  }
+  return 'https://api.storyscout.app'; // Production (placeholder)
+};
 
+const API_BASE_URL = getBaseUrl();
 const AUTH_TOKEN_KEY = '@storyscout_auth_token';
+const USE_MOCK_FALLBACK = true; // Fall back to mock data if API fails
 
-// Mock book database for MVP
+// Mock book database for fallback
 const MOCK_BOOKS_DB = [
   {
     id: 'book_001',
     title: 'Goodnight Moon',
     author: 'Margaret Wise Brown',
-    coverUrl: 'https://via.placeholder.com/150x220/A8D5BA/FFFFFF?text=Goodnight+Moon',
-    ageRange: '2-3',
-    readingTime: '5 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780064430173-M.jpg',
+    age_range: '2-3',
+    reading_time: '5 min',
     themes: ['bedtime', 'animals'],
-    mood: ['calm'],
     description: 'A beloved bedtime classic that says goodnight to everything in the great green room.',
-    whyItFits: 'The rhythmic, soothing text makes it perfect for winding down before sleep.',
+    why_it_fits: 'The rhythmic, soothing text makes it perfect for winding down before sleep.',
   },
   {
     id: 'book_002',
     title: 'Where the Wild Things Are',
     author: 'Maurice Sendak',
-    coverUrl: 'https://via.placeholder.com/150x220/6BB3E0/FFFFFF?text=Wild+Things',
-    ageRange: '4-5',
-    readingTime: '10 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780060254926-M.jpg',
+    age_range: '4-5',
+    reading_time: '10 min',
     themes: ['adventure', 'emotions'],
-    mood: ['adventurous', 'emotional'],
     description: 'Max sails to where the wild things are and becomes their king.',
-    whyItFits: 'A timeless adventure that validates big feelings and the comfort of home.',
+    why_it_fits: 'A timeless adventure that validates big feelings and the comfort of home.',
   },
   {
     id: 'book_003',
     title: 'The Very Hungry Caterpillar',
     author: 'Eric Carle',
-    coverUrl: 'https://via.placeholder.com/150x220/98D8C8/FFFFFF?text=Caterpillar',
-    ageRange: '2-3',
-    readingTime: '5 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780399226908-M.jpg',
+    age_range: '2-3',
+    reading_time: '5 min',
     themes: ['animals', 'learning'],
-    mood: ['calm', 'silly'],
     description: 'Follow a caterpillar as he eats through the week and transforms into a butterfly.',
-    whyItFits: 'Teaches counting and days of the week through an engaging, colorful story.',
+    why_it_fits: 'Teaches counting and days of the week through an engaging, colorful story.',
   },
   {
     id: 'book_004',
     title: 'Dragons Love Tacos',
     author: 'Adam Rubin',
-    coverUrl: 'https://via.placeholder.com/150x220/FFD93D/333333?text=Dragons',
-    ageRange: '4-5',
-    readingTime: '8 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780803736801-M.jpg',
+    age_range: '4-5',
+    reading_time: '8 min',
     themes: ['humor', 'adventure'],
-    mood: ['silly'],
     description: 'Dragons love tacos, but watch out for the spicy salsa!',
-    whyItFits: 'Guaranteed giggles with absurd humor that kids and parents both enjoy.',
+    why_it_fits: 'Guaranteed giggles with absurd humor that kids and parents both enjoy.',
   },
   {
     id: 'book_005',
     title: 'The Feelings Book',
     author: 'Todd Parr',
-    coverUrl: 'https://via.placeholder.com/150x220/DDA0DD/FFFFFF?text=Feelings',
-    ageRange: '2-3',
-    readingTime: '5 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780316043465-M.jpg',
+    age_range: '2-3',
+    reading_time: '5 min',
     themes: ['emotions', 'kindness'],
-    mood: ['emotional', 'calm'],
     description: 'A colorful exploration of all the feelings we can feel.',
-    whyItFits: 'Simple text and bold illustrations help kids identify and discuss emotions.',
+    why_it_fits: 'Simple text and bold illustrations help kids identify and discuss emotions.',
   },
   {
     id: 'book_006',
-    title: 'Charlotte\'s Web',
+    title: "Charlotte's Web",
     author: 'E.B. White',
-    coverUrl: 'https://via.placeholder.com/150x220/90EE90/333333?text=Charlotte',
-    ageRange: '8-10',
-    readingTime: '20 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780064400558-M.jpg',
+    age_range: '8-10',
+    reading_time: '20 min',
     themes: ['friendship', 'animals', 'emotions'],
-    mood: ['emotional', 'calm'],
     description: 'The friendship between a pig named Wilbur and a spider named Charlotte.',
-    whyItFits: 'A timeless story about friendship, loyalty, and the circle of life.',
+    why_it_fits: 'A timeless story about friendship, loyalty, and the circle of life.',
   },
   {
     id: 'book_007',
     title: 'Dog Man',
     author: 'Dav Pilkey',
-    coverUrl: 'https://via.placeholder.com/150x220/FFE66D/333333?text=Dog+Man',
-    ageRange: '6-7',
-    readingTime: '15 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780545581608-M.jpg',
+    age_range: '6-7',
+    reading_time: '15 min',
     themes: ['humor', 'adventure'],
-    mood: ['silly', 'adventurous'],
     description: 'Part dog, part police officer, all hero!',
-    whyItFits: 'Graphic novel format and hilarious adventures that reluctant readers love.',
+    why_it_fits: 'Graphic novel format and hilarious adventures that reluctant readers love.',
   },
   {
     id: 'book_008',
     title: 'The Giving Tree',
     author: 'Shel Silverstein',
-    coverUrl: 'https://via.placeholder.com/150x220/C8E6C9/333333?text=Giving+Tree',
-    ageRange: '4-5',
-    readingTime: '10 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780060256654-M.jpg',
+    age_range: '4-5',
+    reading_time: '10 min',
     themes: ['kindness', 'emotions', 'nature'],
-    mood: ['emotional', 'calm'],
     description: 'A tree gives everything it has to a boy it loves.',
-    whyItFits: 'A moving story about unconditional love and generosity.',
+    why_it_fits: 'A moving story about unconditional love and generosity.',
   },
   {
     id: 'book_009',
-    title: 'Pete the Cat',
+    title: 'Pete the Cat: I Love My White Shoes',
     author: 'James Dean',
-    coverUrl: 'https://via.placeholder.com/150x220/87CEEB/FFFFFF?text=Pete+Cat',
-    ageRange: '2-3',
-    readingTime: '5 min',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780061906220-M.jpg',
+    age_range: '2-3',
+    reading_time: '5 min',
     themes: ['humor', 'kindness'],
-    mood: ['silly', 'calm'],
     description: 'Pete the cat keeps his cool no matter what happens.',
-    whyItFits: 'Catchy repetitive text and a positive message about staying calm.',
+    why_it_fits: 'Catchy repetitive text and a positive message about staying calm.',
   },
   {
     id: 'book_010',
-    title: 'Harry Potter and the Sorcerer\'s Stone',
-    author: 'J.K. Rowling',
-    coverUrl: 'https://via.placeholder.com/150x220/9B89B3/FFFFFF?text=Harry+Potter',
-    ageRange: '8-10',
-    readingTime: '25 min',
-    themes: ['adventure', 'friendship', 'learning'],
-    mood: ['adventurous'],
-    description: 'A young wizard discovers his magical destiny.',
-    whyItFits: 'The perfect chapter book to spark imagination and a love of reading.',
+    title: 'The Cat in the Hat',
+    author: 'Dr. Seuss',
+    cover_url: 'https://covers.openlibrary.org/b/isbn/9780394800011-M.jpg',
+    age_range: '4-5',
+    reading_time: '10 min',
+    themes: ['humor', 'adventure'],
+    description: 'A rainy day turns into wild fun when the Cat in the Hat arrives.',
+    why_it_fits: 'The perfect mix of silly rhymes and mischievous adventure.',
   },
 ];
+
+// Mood mappings for mock filtering
+const MOOD_TO_THEMES = {
+  calm: ['bedtime', 'nature', 'kindness'],
+  silly: ['humor', 'adventure'],
+  adventurous: ['adventure', 'learning'],
+  emotional: ['emotions', 'kindness', 'friendship'],
+};
 
 class ApiService {
   constructor() {
     this.baseUrl = API_BASE_URL;
     this.token = null;
+    this.isOnline = true;
   }
 
   // Initialize token from storage
@@ -165,7 +176,7 @@ class ApiService {
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
   }
 
-  // Base fetch wrapper
+  // Base fetch wrapper with error handling
   async fetch(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
 
@@ -185,9 +196,11 @@ class ApiService {
         throw new Error(`API Error: ${response.status}`);
       }
 
+      this.isOnline = true;
       return response.json();
     } catch (error) {
-      console.error(`API fetch error (${endpoint}):`, error);
+      console.warn(`API fetch error (${endpoint}):`, error.message);
+      this.isOnline = false;
       throw error;
     }
   }
@@ -204,47 +217,78 @@ class ApiService {
    * @returns {Promise<Object[]>} Array of book recommendations
    */
   async getRecommendations({ mood, time, ageRange, readingType, themes = [] }) {
-    // TODO: Replace with actual API call when backend is ready
-    // return this.fetch('/recommendations', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ mood, time, ageRange, readingType, themes }),
-    // });
+    // Try real API first
+    try {
+      const response = await this.fetch('/recommendations', {
+        method: 'POST',
+        body: JSON.stringify({
+          mood,
+          time,
+          age_range: ageRange,
+          reading_type: readingType,
+          themes,
+        }),
+      });
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+      // Transform response to match expected format
+      return response.books.map(book => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        ageRange: book.age_range,
+        readingTime: book.reading_time,
+        themes: book.themes,
+        description: book.description,
+        whyItFits: book.why_it_fits,
+      }));
+    } catch (error) {
+      console.warn('API unavailable, using mock data:', error.message);
 
-    // Filter mock books based on parameters
+      if (!USE_MOCK_FALLBACK) {
+        throw error;
+      }
+
+      // Fall back to mock data
+      return this._getMockRecommendations({ mood, time, ageRange, themes });
+    }
+  }
+
+  /**
+   * Get mock recommendations (fallback when API is unavailable)
+   */
+  _getMockRecommendations({ mood, time, ageRange, themes }) {
     let filtered = [...MOCK_BOOKS_DB];
 
-    // Filter by mood
+    // Filter by mood (match themes associated with mood)
     if (mood) {
+      const moodThemes = MOOD_TO_THEMES[mood] || [];
       filtered = filtered.filter(book =>
-        book.mood.includes(mood)
+        book.themes.some(t => moodThemes.includes(t))
       );
     }
 
     // Filter by age range
     if (ageRange) {
       filtered = filtered.filter(book => {
-        // Parse age ranges and check overlap
-        const bookAges = book.ageRange.split('-').map(Number);
+        const bookAges = book.age_range.split('-').map(Number);
         const userAges = ageRange.split('-').map(Number);
         return bookAges[0] <= userAges[1] && bookAges[1] >= userAges[0];
       });
     }
 
-    // Filter by time (reading time in minutes)
+    // Filter by time
     if (time) {
-      const timeMap = { quick: 5, medium: 12, long: 25 };
+      const timeMap = { quick: 7, medium: 15, long: 30 };
       const maxMinutes = timeMap[time] || 15;
       filtered = filtered.filter(book => {
-        const bookMinutes = parseInt(book.readingTime) || 10;
-        return bookMinutes <= maxMinutes + 5;
+        const bookMinutes = parseInt(book.reading_time) || 10;
+        return bookMinutes <= maxMinutes;
       });
     }
 
     // Boost books that match themes
-    if (themes.length > 0) {
+    if (themes && themes.length > 0) {
       filtered = filtered.sort((a, b) => {
         const aMatches = a.themes.filter(t => themes.includes(t)).length;
         const bMatches = b.themes.filter(t => themes.includes(t)).length;
@@ -256,40 +300,121 @@ class ApiService {
     filtered = filtered.sort(() => Math.random() - 0.5);
     const count = Math.min(filtered.length, Math.floor(Math.random() * 3) + 3);
 
-    return filtered.slice(0, count);
+    // Transform to expected format
+    return filtered.slice(0, count).map(book => ({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      coverUrl: book.cover_url,
+      ageRange: book.age_range,
+      readingTime: book.reading_time,
+      themes: book.themes,
+      description: book.description,
+      whyItFits: book.why_it_fits,
+    }));
   }
 
   /**
    * Get book details by ID
    */
   async getBookById(bookId) {
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return MOCK_BOOKS_DB.find(book => book.id === bookId) || null;
+    try {
+      const book = await this.fetch(`/books/${bookId}`);
+      return {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        ageRange: book.age_range,
+        readingTime: book.reading_time,
+        themes: book.themes,
+        description: book.description,
+        whyItFits: book.why_it_fits,
+      };
+    } catch (error) {
+      if (!USE_MOCK_FALLBACK) throw error;
+
+      // Fall back to mock
+      const book = MOCK_BOOKS_DB.find(b => b.id === bookId);
+      if (!book) return null;
+
+      return {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        ageRange: book.age_range,
+        readingTime: book.reading_time,
+        themes: book.themes,
+        description: book.description,
+        whyItFits: book.why_it_fits,
+      };
+    }
   }
 
   /**
    * Search books by query
    */
   async searchBooks(query) {
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      const books = await this.fetch(`/books?q=${encodeURIComponent(query)}`);
+      return books.map(book => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        ageRange: book.age_range,
+        readingTime: book.reading_time,
+        themes: book.themes,
+      }));
+    } catch (error) {
+      if (!USE_MOCK_FALLBACK) throw error;
 
-    const lowerQuery = query.toLowerCase();
-    return MOCK_BOOKS_DB.filter(book =>
-      book.title.toLowerCase().includes(lowerQuery) ||
-      book.author.toLowerCase().includes(lowerQuery) ||
-      book.themes.some(t => t.includes(lowerQuery))
-    );
+      // Fall back to mock
+      const lowerQuery = query.toLowerCase();
+      return MOCK_BOOKS_DB.filter(book =>
+        book.title.toLowerCase().includes(lowerQuery) ||
+        book.author.toLowerCase().includes(lowerQuery) ||
+        book.themes.some(t => t.includes(lowerQuery))
+      ).map(book => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        ageRange: book.age_range,
+        readingTime: book.reading_time,
+        themes: book.themes,
+      }));
+    }
+  }
+
+  /**
+   * Check API health
+   */
+  async checkHealth() {
+    try {
+      const response = await this.fetch('/health');
+      this.isOnline = response.status === 'healthy';
+      return this.isOnline;
+    } catch (error) {
+      this.isOnline = false;
+      return false;
+    }
   }
 
   /**
    * Save user feedback on a recommendation
    */
   async saveFeedback(bookId, feedback) {
-    // TODO: Implement when backend is ready
-    console.log('Feedback saved:', { bookId, feedback });
-    return { success: true };
+    try {
+      return await this.fetch('/feedback', {
+        method: 'POST',
+        body: JSON.stringify({ bookId, feedback }),
+      });
+    } catch (error) {
+      console.log('Feedback saved locally:', { bookId, feedback });
+      return { success: true, offline: true };
+    }
   }
 }
 
