@@ -62,6 +62,59 @@ SEARCH_QUERIES = [
     {"query": "Hungry Caterpillar", "subject": "juvenile fiction", "description": "Classic - Hungry Caterpillar"},
     {"query": "Charlotte's Web", "subject": "juvenile fiction", "description": "Classic - Charlotte's Web"},
     {"query": "Giving Tree", "subject": "juvenile fiction", "description": "Classic - Giving Tree"},
+
+    # =====================================================
+    # EARLY READERS (Ages 6-7) - Need more books!
+    # =====================================================
+    {"query": "beginning reader level 1", "subject": "juvenile fiction", "description": "Beginning Reader L1"},
+    {"query": "beginning reader level 2", "subject": "juvenile fiction", "description": "Beginning Reader L2"},
+    {"query": "I Can Read books", "subject": "juvenile fiction", "description": "I Can Read Series"},
+    {"query": "Step Into Reading", "subject": "juvenile fiction", "description": "Step Into Reading"},
+    {"query": "Ready to Read", "subject": "juvenile fiction", "description": "Ready to Read"},
+    {"query": "first grade readers", "subject": "juvenile fiction", "description": "First Grade Readers"},
+    {"query": "easy reader books", "subject": "juvenile fiction", "description": "Easy Readers"},
+    {"query": "leveled readers ages 5-8", "subject": "juvenile fiction", "description": "Leveled Readers 5-8"},
+    {"query": "Fly Guy", "subject": "juvenile fiction", "description": "Fly Guy Series"},
+    {"query": "Henry and Mudge", "subject": "juvenile fiction", "description": "Henry and Mudge"},
+    {"query": "Amelia Bedelia", "subject": "juvenile fiction", "description": "Amelia Bedelia"},
+    {"query": "Frog and Toad", "subject": "juvenile fiction", "description": "Frog and Toad"},
+    {"query": "Little Bear", "subject": "juvenile fiction", "description": "Little Bear"},
+    {"query": "Biscuit dog", "subject": "juvenile fiction", "description": "Biscuit Series"},
+    {"query": "Mercy Watson", "subject": "juvenile fiction", "description": "Mercy Watson"},
+    {"query": "Owl Diaries", "subject": "juvenile fiction", "description": "Owl Diaries"},
+    {"query": "Dragon Masters", "subject": "juvenile fiction", "description": "Dragon Masters"},
+    {"query": "early chapter books ages 6-9", "subject": "juvenile fiction", "description": "Early Chapter 6-9"},
+    {"query": "Nate the Great", "subject": "juvenile fiction", "description": "Nate the Great"},
+    {"query": "Cam Jansen", "subject": "juvenile fiction", "description": "Cam Jansen"},
+
+    # =====================================================
+    # CHAPTER BOOKS (Ages 8-10) - Need more books!
+    # =====================================================
+    {"query": "chapter books ages 8-12", "subject": "juvenile fiction", "description": "Chapter Books 8-12"},
+    {"query": "middle grade fiction", "subject": "juvenile fiction", "description": "Middle Grade Fiction"},
+    {"query": "ages 9-12 fiction", "subject": "juvenile fiction", "description": "Ages 9-12 Fiction"},
+    {"query": "elementary school chapter books", "subject": "juvenile fiction", "description": "Elementary Chapter"},
+    {"query": "third grade chapter books", "subject": "juvenile fiction", "description": "Third Grade Books"},
+    {"query": "fourth grade reading", "subject": "juvenile fiction", "description": "Fourth Grade Books"},
+    {"query": "Junie B Jones", "subject": "juvenile fiction", "description": "Junie B Jones"},
+    {"query": "Geronimo Stilton", "subject": "juvenile fiction", "description": "Geronimo Stilton"},
+    {"query": "Dog Man", "subject": "juvenile fiction", "description": "Dog Man"},
+    {"query": "Captain Underpants", "subject": "juvenile fiction", "description": "Captain Underpants"},
+    {"query": "Dogman and Cat Kid", "subject": "juvenile fiction", "description": "Dogman Cat Kid"},
+    {"query": "Big Nate", "subject": "juvenile fiction", "description": "Big Nate"},
+    {"query": "Dork Diaries", "subject": "juvenile fiction", "description": "Dork Diaries"},
+    {"query": "Bad Guys series", "subject": "juvenile fiction", "description": "Bad Guys"},
+    {"query": "Goosebumps", "subject": "juvenile fiction", "description": "Goosebumps"},
+    {"query": "Percy Jackson", "subject": "juvenile fiction", "description": "Percy Jackson"},
+    {"query": "Ramona Quimby", "subject": "juvenile fiction", "description": "Ramona Quimby"},
+    {"query": "Judy Moody", "subject": "juvenile fiction", "description": "Judy Moody"},
+    {"query": "Ivy and Bean", "subject": "juvenile fiction", "description": "Ivy and Bean"},
+    {"query": "Stink Moody", "subject": "juvenile fiction", "description": "Stink Series"},
+    {"query": "Horrible Harry", "subject": "juvenile fiction", "description": "Horrible Harry"},
+    {"query": "A to Z Mysteries", "subject": "juvenile fiction", "description": "A to Z Mysteries"},
+    {"query": "Clementine series", "subject": "juvenile fiction", "description": "Clementine"},
+    {"query": "Wayside School", "subject": "juvenile fiction", "description": "Wayside School"},
+    {"query": "Flat Stanley", "subject": "juvenile fiction", "description": "Flat Stanley"},
 ]
 
 

@@ -13,6 +13,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { PreferencesProvider } from './src/context/PreferencesContext';
 import { SavedBooksProvider } from './src/context/SavedBooksContext';
 import { PremiumProvider } from './src/context/PremiumContext';
+import { KidsProvider } from './src/context/KidsContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { colors } from './src/styles/colors';
 
@@ -25,11 +26,13 @@ export default function App() {
       />
       <AuthProvider>
         <PreferencesProvider>
-          <SavedBooksProvider>
-            <PremiumProvider>
-              <AppNavigator />
-            </PremiumProvider>
-          </SavedBooksProvider>
+          <PremiumProvider>
+            <KidsProvider>
+              <SavedBooksProvider>
+                <AppNavigator />
+              </SavedBooksProvider>
+            </KidsProvider>
+          </PremiumProvider>
         </PreferencesProvider>
       </AuthProvider>
     </GestureHandlerRootView>

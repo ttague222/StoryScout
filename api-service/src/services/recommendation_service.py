@@ -92,7 +92,7 @@ class RecommendationService:
         # Convert time option to max minutes
         max_minutes = TIME_TO_MINUTES.get(request.time, 15)
 
-        # Query books from database
+        # Query books from database with mood filter
         books = await query_books(
             age_range=request.age_range,
             moods=[request.mood],
@@ -101,7 +101,31 @@ class RecommendationService:
             limit=50
         )
 
-        logger.info(f"[{request_id}] Found {len(books)} potential books")
+        logger.info(f"[{request_id}] Found {len(books)} books with mood filter")
+
+        # If no books found with mood filter, try without mood (fallback)
+        if not books:
+            logger.info(f"[{request_id}] No books with mood={request.mood}, trying without mood filter")
+            books = await query_books(
+                age_range=request.age_range,
+                moods=None,  # Remove mood filter
+                max_reading_time=max_minutes,
+                exclude_ids=request.exclude_book_ids,
+                limit=50
+            )
+            logger.info(f"[{request_id}] Found {len(books)} books without mood filter")
+
+        # If still no books, try without time restriction
+        if not books:
+            logger.info(f"[{request_id}] Still no books, trying without time filter")
+            books = await query_books(
+                age_range=request.age_range,
+                moods=None,
+                max_reading_time=None,  # Remove time filter too
+                exclude_ids=request.exclude_book_ids,
+                limit=50
+            )
+            logger.info(f"[{request_id}] Found {len(books)} books without any filters except age")
 
         if not books:
             # Return empty response
@@ -117,9 +141,9 @@ class RecommendationService:
         # Sort by score (descending)
         scored_books.sort(key=lambda x: x["score"], reverse=True)
 
-        # Take top 3-5 books
+        # Select top books, ensuring no duplicate authors
         num_results = min(len(scored_books), random.randint(3, 5))
-        top_books = scored_books[:num_results]
+        top_books = self._select_diverse_books(scored_books, num_results)
 
         # Convert to response format
         book_responses = [
@@ -191,6 +215,35 @@ class RecommendationService:
             scored.append(book)
 
         return scored
+
+    def _select_diverse_books(
+        self,
+        scored_books: List[Dict[str, Any]],
+        num_results: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Select top books ensuring no duplicate authors.
+
+        Takes the highest-scored book from each unique author,
+        maintaining score order as much as possible.
+        """
+        selected = []
+        seen_authors = set()
+
+        for book in scored_books:
+            if len(selected) >= num_results:
+                break
+
+            author = book.get("author", "Unknown Author").lower().strip()
+
+            # Skip if we already have a book from this author
+            if author in seen_authors:
+                continue
+
+            selected.append(book)
+            seen_authors.add(author)
+
+        return selected
 
     def _to_book_response(
         self,

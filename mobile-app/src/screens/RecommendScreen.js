@@ -24,11 +24,18 @@ import { typography, spacing, radii, shadows } from '../styles/theme';
 import { MOODS, TIME_OPTIONS } from '../config/options';
 import { usePreferences } from '../context/PreferencesContext';
 import { usePremium } from '../context/PremiumContext';
+import { useKids, KID_AVATARS } from '../context/KidsContext';
 
 export default function RecommendScreen() {
   const navigation = useNavigation();
   const { preferences, updatePreferences } = usePreferences();
   const { canGetRecommendation, remainingRecommendations, isPremium } = usePremium();
+  const { activeKid, hasKids } = useKids();
+
+  // Get the active kid's avatar emoji
+  const activeKidAvatar = activeKid
+    ? KID_AVATARS.find(a => a.id === activeKid.avatar)?.emoji || '👤'
+    : '👤';
 
   const [selectedMood, setSelectedMood] = useState(preferences.lastMood);
   const [selectedTime, setSelectedTime] = useState(preferences.lastTimeOption);
@@ -51,17 +58,27 @@ export default function RecommendScreen() {
 
     setIsLoading(true);
 
+    // Use active kid's preferences if available, otherwise fall back to general preferences
+    const ageRange = activeKid?.ageRange || preferences.childAgeRange;
+    const themes = activeKid?.themes?.length > 0 ? activeKid.themes : preferences.themes;
+
+    console.log('[RecommendScreen] Active kid:', activeKid);
+    console.log('[RecommendScreen] Using ageRange:', ageRange);
+    console.log('[RecommendScreen] Fallback childAgeRange:', preferences.childAgeRange);
+
     // Navigate to results (passing params)
     navigation.navigate('Results', {
       mood: selectedMood,
       time: selectedTime,
-      ageRange: preferences.childAgeRange,
+      ageRange,
       readingType: preferences.readingType,
-      themes: preferences.themes,
+      themes,
+      kidId: activeKid?.id,
+      kidName: activeKid?.name,
     });
 
     setIsLoading(false);
-  }, [selectedMood, selectedTime, preferences, canGetRecommendation, navigation, updatePreferences]);
+  }, [selectedMood, selectedTime, preferences, activeKid, canGetRecommendation, navigation, updatePreferences]);
 
   const remaining = remainingRecommendations();
 
@@ -73,8 +90,30 @@ export default function RecommendScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Find a book</Text>
-          <Text style={styles.title}>What's the mood?</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.greeting}>Find a book</Text>
+              <Text style={styles.title}>What's the mood?</Text>
+            </View>
+            {/* Kid Switcher */}
+            <Pressable
+              style={styles.kidSwitcher}
+              onPress={() => navigation.navigate('KidsList')}
+            >
+              <Text style={styles.kidAvatar}>{activeKidAvatar}</Text>
+              <View style={styles.kidSwitcherText}>
+                <Text style={styles.kidName} numberOfLines={1}>
+                  {activeKid?.name || 'Select Child'}
+                </Text>
+                {activeKid && (
+                  <Text style={styles.kidAge}>
+                    {activeKid.ageRange} yrs
+                  </Text>
+                )}
+              </View>
+              <Ionicons name="chevron-down" size={16} color={colors.text.tertiary} />
+            </Pressable>
+          </View>
         </View>
 
         {/* Usage indicator (free tier) */}
@@ -203,6 +242,46 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.lg,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  kidSwitcher: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.card,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.sm,
+    borderRadius: radii.full,
+    gap: spacing.xs,
+    ...shadows.sm,
+    maxWidth: 140,
+  },
+  kidAvatar: {
+    fontSize: 24,
+    width: 32,
+    height: 32,
+    textAlign: 'center',
+    lineHeight: 32,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  kidSwitcherText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  kidName: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.medium,
+    color: colors.text.primary,
+  },
+  kidAge: {
+    fontSize: 10,
+    color: colors.text.tertiary,
   },
   greeting: {
     fontSize: typography.sizes.body,

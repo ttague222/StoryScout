@@ -10,16 +10,9 @@ import { Platform } from 'react-native';
 
 // API Configuration
 const getBaseUrl = () => {
-  if (__DEV__) {
-    // For Android emulator, use 10.0.2.2 instead of localhost
-    // For iOS simulator, localhost works
-    // For physical devices, use your computer's local IP
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:8080';
-    }
-    return 'http://localhost:8080';
-  }
-  return 'https://api.storyscout.app'; // Production (placeholder)
+  // Always use production API (Cloud Run)
+  // Local development can override by changing this
+  return 'https://storyscout-api-447022398745.us-central1.run.app';
 };
 
 const API_BASE_URL = getBaseUrl();
@@ -219,6 +212,8 @@ class ApiService {
   async getRecommendations({ mood, time, ageRange, readingType, themes = [] }) {
     // Try real API first
     try {
+      console.log('[API] Fetching recommendations with:', { mood, time, ageRange, themes });
+
       const response = await this.fetch('/recommendations', {
         method: 'POST',
         body: JSON.stringify({
@@ -229,6 +224,8 @@ class ApiService {
           themes,
         }),
       });
+
+      console.log('[API] Got response:', response);
 
       // Transform response to match expected format
       return response.books.map(book => ({

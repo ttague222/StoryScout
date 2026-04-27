@@ -112,10 +112,11 @@ export const SUBSCRIPTION_TIERS = {
     name: 'Free',
     recommendationsPerDay: 3,
     maxSavedBooks: 10,
+    maxKids: 1,
     features: [
       '3 recommendations per day',
       'Save up to 10 books',
-      'Basic themes',
+      '1 child profile',
     ],
   },
   premium: {
@@ -123,10 +124,11 @@ export const SUBSCRIPTION_TIERS = {
     name: 'Premium',
     recommendationsPerDay: Infinity,
     maxSavedBooks: Infinity,
+    maxKids: 5,
     features: [
       'Unlimited recommendations',
       'Unlimited saved books',
-      'Seasonal collections',
+      'Up to 5 child profiles',
       'Priority support',
     ],
   },

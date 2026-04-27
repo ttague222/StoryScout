@@ -236,8 +236,9 @@ class OpenLibraryService:
         subjects = raw_data.get("subject", [])
         themes = self._map_subjects_to_themes(subjects)
 
-        # Determine age range from subjects
-        age_range = self._determine_age_range(subjects)
+        # Determine age range from subjects, page count, and title
+        title = raw_data.get("title", "")
+        age_range = self._determine_age_range(subjects, pages, title)
 
         # Determine moods from subjects/title
         moods = self._determine_moods(subjects, raw_data.get("title", ""))
@@ -290,20 +291,79 @@ class OpenLibraryService:
 
         return list(themes) if themes else ["adventure"]  # Default to adventure
 
-    def _determine_age_range(self, subjects: List[str]) -> str:
-        """Determine age range from subjects"""
+    def _determine_age_range(self, subjects: List[str], pages: int = None, title: str = "") -> str:
+        """Determine age range from subjects, page count, and title"""
         subject_lower = " ".join(subjects[:30]).lower()
+        title_lower = title.lower()
 
-        if any(term in subject_lower for term in ["board book", "baby", "toddler"]):
+        # Board books / Baby books (Ages 2-3)
+        if any(term in subject_lower for term in ["board book", "baby", "toddler", "infant"]):
             return "2-3"
-        elif any(term in subject_lower for term in ["picture book", "preschool", "ages 3-5", "ages 4-8"]):
-            return "4-5"
-        elif any(term in subject_lower for term in ["early reader", "beginning reader", "ages 5-8", "ages 6-9"]):
-            return "6-7"
-        elif any(term in subject_lower for term in ["chapter book", "middle grade", "ages 8-12", "ages 9-12"]):
+
+        # Chapter books / Middle grade (Ages 8-10)
+        # Check these BEFORE picture books since some may have both tags
+        chapter_indicators = [
+            "chapter book", "middle grade", "ages 8-12", "ages 9-12", "ages 8-10",
+            "grade 3", "grade 4", "grade 5", "third grade", "fourth grade", "fifth grade",
+            "juvenile fiction -- series", "children's series"
+        ]
+        # Series names that are clearly chapter books
+        chapter_series = [
+            "diary of a wimpy kid", "dog man", "captain underpants", "geronimo stilton",
+            "goosebumps", "percy jackson", "magic tree house", "big nate", "dork diaries",
+            "bad guys", "wimpy kid", "ramona", "junie b", "judy moody", "stink",
+            "wayside school", "a to z mysteries", "cam jansen", "horrible harry",
+            "ivy and bean", "clementine", "flat stanley"
+        ]
+        if any(term in subject_lower for term in chapter_indicators):
             return "8-10"
-        else:
-            return "4-5"  # Default to preschool
+        if any(series in title_lower for series in chapter_series):
+            return "8-10"
+        if any(series in subject_lower for series in chapter_series):
+            return "8-10"
+        # Longer books are likely chapter books
+        if pages and pages > 80:
+            return "8-10"
+
+        # Early readers (Ages 6-7)
+        early_reader_indicators = [
+            "early reader", "beginning reader", "ages 5-8", "ages 6-9", "ages 5-7",
+            "ages 6-8", "easy reader", "i can read", "step into reading", "ready to read",
+            "level 1", "level 2", "level 3", "first grade", "second grade", "grade 1", "grade 2",
+            "leveled reader", "beginning chapter"
+        ]
+        # Series names that are clearly early readers
+        early_reader_series = [
+            "frog and toad", "henry and mudge", "amelia bedelia", "biscuit",
+            "little bear", "mercy watson", "fly guy", "owl diaries", "dragon masters",
+            "nate the great", "elephant & piggie", "elephant and piggie", "mo willems"
+        ]
+        if any(term in subject_lower for term in early_reader_indicators):
+            return "6-7"
+        if any(series in title_lower for series in early_reader_series):
+            return "6-7"
+        if any(series in subject_lower for series in early_reader_series):
+            return "6-7"
+        # Medium-length books may be early readers
+        if pages and 40 <= pages <= 80:
+            return "6-7"
+
+        # Picture books / Preschool (Ages 4-5)
+        if any(term in subject_lower for term in ["picture book", "preschool", "ages 3-5", "ages 4-8", "ages 4-6", "ages 3-6"]):
+            return "4-5"
+
+        # Default based on page count
+        if pages:
+            if pages < 20:
+                return "2-3"
+            elif pages < 40:
+                return "4-5"
+            elif pages < 80:
+                return "6-7"
+            else:
+                return "8-10"
+
+        return "4-5"  # Default to preschool
 
     def _determine_moods(self, subjects: List[str], title: str) -> List[str]:
         """Determine moods from subjects and title"""

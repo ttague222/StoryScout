@@ -27,6 +27,8 @@ import {
   SavedBooksScreen,
   ProfileScreen,
   PremiumScreen,
+  AddKidScreen,
+  KidsListScreen,
 } from '../screens';
 
 const Stack = createStackNavigator();
@@ -92,8 +94,12 @@ export default function AppNavigator() {
   const { loading: authLoading } = useAuth();
   const { isLoaded: prefsLoaded, hasCompletedOnboarding } = usePreferences();
 
+  // Debug logging
+  console.log('AppNavigator state:', { authLoading, prefsLoaded, hasCompletedOnboarding });
+
   // Show loading while initializing
   if (authLoading || !prefsLoaded) {
+    console.log('Still loading - authLoading:', authLoading, 'prefsLoaded:', prefsLoaded);
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
         <ActivityIndicator size="large" color={colors.primary.main} />
@@ -130,6 +136,22 @@ export default function AppNavigator() {
             <Stack.Screen
               name="Premium"
               component={PremiumScreen}
+              options={{
+                presentation: 'modal',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="KidsList"
+              component={KidsListScreen}
+              options={{
+                presentation: 'modal',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="AddKid"
+              component={AddKidScreen}
               options={{
                 presentation: 'modal',
                 gestureEnabled: true,

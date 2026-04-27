@@ -24,57 +24,25 @@ import { typography, spacing, radii, shadows } from '../styles/theme';
 import { MOODS, TIME_OPTIONS } from '../config/options';
 import { useSavedBooks } from '../context/SavedBooksContext';
 import { usePremium } from '../context/PremiumContext';
-
-// Mock book data for MVP (will be replaced by API)
-const MOCK_BOOKS = [
-  {
-    id: '1',
-    title: 'The Cozy Burrow',
-    author: 'Emily Meadows',
-    coverUrl: 'https://via.placeholder.com/150x220/A8D5BA/FFFFFF?text=Book',
-    ageRange: '3-5',
-    readingTime: '5 min',
-    themes: ['bedtime', 'animals'],
-    whyItFits: 'A gentle story about a bunny preparing for sleep, perfect for winding down.',
-  },
-  {
-    id: '2',
-    title: 'Adventures in Starlight',
-    author: 'Marcus Chen',
-    coverUrl: 'https://via.placeholder.com/150x220/6BB3E0/FFFFFF?text=Book',
-    ageRange: '4-7',
-    readingTime: '10 min',
-    themes: ['adventure', 'kindness'],
-    whyItFits: 'An exciting journey that teaches empathy while keeping kids engaged.',
-  },
-  {
-    id: '3',
-    title: 'Feelings Are Friends',
-    author: 'Dr. Sarah Park',
-    coverUrl: 'https://via.placeholder.com/150x220/DDA0DD/FFFFFF?text=Book',
-    ageRange: '3-6',
-    readingTime: '8 min',
-    themes: ['emotions', 'learning'],
-    whyItFits: 'Helps children understand and express their emotions through colorful illustrations.',
-  },
-  {
-    id: '4',
-    title: 'The Silly Soup',
-    author: 'Jasper Giggles',
-    coverUrl: 'https://via.placeholder.com/150x220/FFD93D/333333?text=Book',
-    ageRange: '2-5',
-    readingTime: '5 min',
-    themes: ['humor', 'animals'],
-    whyItFits: 'Guaranteed giggles with rhyming text and absurd animal antics.',
-  },
-];
+import { usePreferences } from '../context/PreferencesContext';
+import { api } from '../services/api';
 
 export default function ResultsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { mood, time } = route.params || {};
+  const { mood, time, ageRange, themes: kidThemes, kidName } = route.params || {};
   const { isBookSaved, toggleSaveBook } = useSavedBooks();
   const { incrementUsage } = usePremium();
+  const { childAgeRange, themes: defaultThemes } = usePreferences();
+
+  // Use kid-specific values if passed, otherwise fall back to preferences
+  const effectiveAgeRange = ageRange || childAgeRange;
+  const effectiveThemes = kidThemes?.length > 0 ? kidThemes : (defaultThemes || []);
+
+  console.log('[ResultsScreen] route.params:', route.params);
+  console.log('[ResultsScreen] ageRange from params:', ageRange);
+  console.log('[ResultsScreen] childAgeRange from prefs:', childAgeRange);
+  console.log('[ResultsScreen] effectiveAgeRange:', effectiveAgeRange);
 
   const [books, setBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +51,7 @@ export default function ResultsScreen() {
   const moodInfo = MOODS.find(m => m.id === mood);
   const timeInfo = TIME_OPTIONS.find(t => t.id === time);
 
-  // Fetch recommendations
+  // Fetch recommendations from API
   const fetchRecommendations = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
@@ -92,17 +60,14 @@ export default function ResultsScreen() {
     }
 
     try {
-      // TODO: Replace with actual API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const recommendations = await api.getRecommendations({
+        mood,
+        time,
+        ageRange: effectiveAgeRange,
+        themes: effectiveThemes,
+      });
 
-      // Filter mock books based on mood/time (simplified)
-      let filtered = [...MOCK_BOOKS];
-
-      // Shuffle and take 3-5 books
-      filtered = filtered.sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random() * 3) + 3);
-
-      setBooks(filtered);
+      setBooks(recommendations);
 
       // Track usage (only on initial load, not refresh)
       if (!isRefresh) {
@@ -110,11 +75,12 @@ export default function ResultsScreen() {
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);
+      setBooks([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [mood, time, incrementUsage]);
+  }, [mood, time, effectiveAgeRange, effectiveThemes, incrementUsage]);
 
   useEffect(() => {
     fetchRecommendations();

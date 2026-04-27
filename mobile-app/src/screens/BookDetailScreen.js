@@ -20,9 +20,14 @@ import {
   SafeAreaView,
   Image,
   Dimensions,
+  Share,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+
+// Amazon Associates affiliate tag - replace with your own
+const AMAZON_AFFILIATE_TAG = 'storyscout-20';
 import { colors } from '../styles/colors';
 import { typography, spacing, radii, shadows } from '../styles/theme';
 import { THEMES } from '../config/options';
@@ -53,6 +58,38 @@ export default function BookDetailScreen() {
 
   const isSaved = isBookSaved(book.id);
 
+  // Share the book
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Check out "${book.title}" by ${book.author} - a great book for ${book.ageRange} year olds! Found via StoryScout.`,
+        title: book.title,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  // Open Amazon search for this book
+  const handleBuyOnAmazon = () => {
+    // If book has ISBN, use it for direct product search (most reliable)
+    // The book.id is often the ISBN from Open Library
+    const bookId = book.id || '';
+    const isIsbn = /^\d{10}$|^\d{13}$/.test(bookId);
+
+    let amazonUrl;
+    if (isIsbn) {
+      // Search by ISBN for exact match
+      amazonUrl = `https://www.amazon.com/s?k=${bookId}&tag=${AMAZON_AFFILIATE_TAG}`;
+    } else {
+      // Search by title and author
+      const searchQuery = encodeURIComponent(`"${book.title}" ${book.author}`);
+      amazonUrl = `https://www.amazon.com/s?k=${searchQuery}&i=stripbooks&tag=${AMAZON_AFFILIATE_TAG}`;
+    }
+
+    Linking.openURL(amazonUrl);
+  };
+
   // Get theme info for display
   const bookThemes = (book.themes || []).map(themeId => {
     const theme = THEMES.find(t => t.id === themeId);
@@ -66,13 +103,7 @@ export default function BookDetailScreen() {
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
-        <Pressable
-          style={styles.shareButton}
-          onPress={() => {
-            // TODO: Implement share functionality
-            console.log('Share book:', book.title);
-          }}
-        >
+        <Pressable style={styles.shareButton} onPress={handleShare}>
           <Ionicons name="share-outline" size={24} color={colors.text.primary} />
         </Pressable>
       </View>
@@ -155,6 +186,16 @@ export default function BookDetailScreen() {
           </Text>
         </View>
 
+        {/* Buy on Amazon Button */}
+        <Pressable style={styles.amazonButton} onPress={handleBuyOnAmazon}>
+          <Ionicons name="cart-outline" size={20} color={colors.text.inverse} />
+          <Text style={styles.amazonButtonText}>Buy on Amazon</Text>
+          <Ionicons name="open-outline" size={16} color={colors.text.inverse} />
+        </Pressable>
+        <Text style={styles.affiliateDisclosure}>
+          As an Amazon Associate, we earn from qualifying purchases.
+        </Text>
+
         {/* Spacer for button */}
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -215,7 +256,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
   },
   backButton: {
     width: 44,
@@ -380,5 +422,28 @@ const styles = StyleSheet.create({
   },
   saveButtonTextSaved: {
     color: colors.background.card,
+  },
+  amazonButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF9900',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    ...shadows.sm,
+  },
+  amazonButtonText: {
+    fontSize: typography.sizes.body,
+    fontWeight: typography.weights.semibold,
+    color: colors.text.inverse,
+  },
+  affiliateDisclosure: {
+    fontSize: typography.sizes.xs,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: -spacing.sm,
   },
 });

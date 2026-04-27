@@ -9,3 +9,5 @@ export { default as BookDetailScreen } from './BookDetailScreen';
 export { default as SavedBooksScreen } from './SavedBooksScreen';
 export { default as ProfileScreen } from './ProfileScreen';
 export { default as PremiumScreen } from './PremiumScreen';
+export { default as AddKidScreen } from './AddKidScreen';
+export { default as KidsListScreen } from './KidsListScreen';

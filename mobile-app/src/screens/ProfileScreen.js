@@ -27,10 +27,20 @@ import { usePreferences } from '../context/PreferencesContext';
 import { usePremium } from '../context/PremiumContext';
 import { useSavedBooks } from '../context/SavedBooksContext';
 
+// Show debug section in development
+const SHOW_DEBUG_SECTION = __DEV__;
+
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const { preferences, resetPreferences } = usePreferences();
-  const { isPremium, currentTier, restorePurchases } = usePremium();
+  const {
+    isPremium,
+    currentTier,
+    restorePurchases,
+    dailyRecommendations,
+    debugTogglePremium,
+    debugResetUsage,
+  } = usePremium();
   const { savedCount } = useSavedBooks();
 
   // Get display values
@@ -211,6 +221,42 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </Pressable>
         </View>
+
+        {/* Debug Section - Only in development */}
+        {SHOW_DEBUG_SECTION && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.status.warning }]}>
+              Debug (Dev Only)
+            </Text>
+
+            <View style={styles.debugCard}>
+              <View style={styles.debugRow}>
+                <Text style={styles.debugLabel}>Premium Status:</Text>
+                <Pressable
+                  style={[
+                    styles.debugToggle,
+                    isPremium && styles.debugToggleActive,
+                  ]}
+                  onPress={debugTogglePremium}
+                >
+                  <Text style={[
+                    styles.debugToggleText,
+                    isPremium && styles.debugToggleTextActive,
+                  ]}>
+                    {isPremium ? 'ON' : 'OFF'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.debugRow}>
+                <Text style={styles.debugLabel}>Daily Usage: {dailyRecommendations}/3</Text>
+                <Pressable style={styles.debugButton} onPress={debugResetUsage}>
+                  <Text style={styles.debugButtonText}>Reset</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Version */}
         <Text style={styles.version}>StoryScout v1.0.0</Text>
@@ -398,5 +444,52 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.text.tertiary,
     marginTop: spacing.lg,
+  },
+  // Debug styles
+  debugCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.status.warning,
+    borderStyle: 'dashed',
+  },
+  debugRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  debugLabel: {
+    fontSize: typography.sizes.body,
+    color: colors.text.primary,
+  },
+  debugToggle: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.full,
+    backgroundColor: colors.background.tertiary,
+  },
+  debugToggleActive: {
+    backgroundColor: colors.status.success,
+  },
+  debugToggleText: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.text.secondary,
+  },
+  debugToggleTextActive: {
+    color: colors.text.inverse,
+  },
+  debugButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.full,
+    backgroundColor: colors.status.warning,
+  },
+  debugButtonText: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.text.inverse,
   },
 });

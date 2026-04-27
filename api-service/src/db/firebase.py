@@ -6,6 +6,7 @@ Handles connection to Firestore for book storage
 
 import os
 import logging
+import random
 from typing import Optional
 from functools import lru_cache
 
@@ -95,6 +96,26 @@ async def get_books_by_ids(book_ids: list) -> list:
     return books
 
 
+def _parse_age_range(age_range: str) -> tuple:
+    """Parse age range string like '4-5' into (min, max) tuple"""
+    try:
+        parts = age_range.split("-")
+        if len(parts) == 2:
+            return (int(parts[0]), int(parts[1]))
+        return (0, 99)
+    except:
+        return (0, 99)
+
+
+def _age_ranges_overlap(book_range: str, user_range: str) -> bool:
+    """Check if book age range overlaps with user's selected age range"""
+    book_min, book_max = _parse_age_range(book_range)
+    user_min, user_max = _parse_age_range(user_range)
+
+    # Ranges overlap if one starts before the other ends
+    return book_min <= user_max and user_min <= book_max
+
+
 async def query_books(
     age_range: Optional[str] = None,
     moods: Optional[list] = None,
@@ -112,15 +133,14 @@ async def query_books(
     db = get_db()
     query = db.collection(BOOKS_COLLECTION).where("is_active", "==", True)
 
-    # Filter by age range
-    if age_range:
-        query = query.where("age_range", "==", age_range)
+    # Note: We don't filter age_range in Firestore because we need overlap matching
+    # Instead we fetch more books and filter in Python
 
-    # Limit results
-    query = query.limit(limit * 2)  # Get extra to account for Python filtering
+    # Limit results - get more to account for Python filtering
+    query = query.limit(limit * 4)
 
     docs = query.stream()
-    books = []
+    all_matching_books = []
 
     for doc in docs:
         data = doc.to_dict()
@@ -129,6 +149,12 @@ async def query_books(
         # Skip excluded books
         if exclude_ids and doc.id in exclude_ids:
             continue
+
+        # Filter by age range (allow overlapping ranges)
+        if age_range:
+            book_age_range = data.get("age_range", "")
+            if book_age_range and not _age_ranges_overlap(book_age_range, age_range):
+                continue
 
         # Filter by mood (Firestore can't do array-contains with multiple values)
         if moods:
@@ -142,12 +168,13 @@ async def query_books(
             if book_time > max_reading_time:
                 continue
 
-        books.append(data)
+        all_matching_books.append(data)
 
-        if len(books) >= limit:
-            break
+    # Shuffle to provide variety in recommendations
+    random.shuffle(all_matching_books)
 
-    return books
+    # Return up to limit books
+    return all_matching_books[:limit]
 
 
 async def save_book(book_data: dict) -> str:

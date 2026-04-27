@@ -10,6 +10,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUBSCRIPTION_TIERS } from '../config/options';
 
 const USAGE_STORAGE_KEY = '@storyscout_daily_usage';
+const DEBUG_PREMIUM_KEY = '@storyscout_debug_premium';
+
+// ============================================
+// DEBUG: Toggle this to test premium features
+// Set to true to simulate premium, false for free
+// ============================================
+const DEBUG_FORCE_PREMIUM = false;
 
 const PremiumContext = createContext(null);
 
@@ -45,9 +52,22 @@ export function PremiumProvider({ children }) {
         }
       }
 
-      // TODO: Check RevenueCat for subscription status
-      // For now, default to free tier
-      setIsPremium(false);
+      // Check for debug premium override
+      if (DEBUG_FORCE_PREMIUM) {
+        console.log('[DEBUG] Premium mode forced ON');
+        setIsPremium(true);
+      } else {
+        // Check if debug toggle was set in app
+        const debugPremium = await AsyncStorage.getItem(DEBUG_PREMIUM_KEY);
+        if (debugPremium === 'true') {
+          console.log('[DEBUG] Premium mode enabled via toggle');
+          setIsPremium(true);
+        } else {
+          // TODO: Check RevenueCat for subscription status
+          // For now, default to free tier
+          setIsPremium(false);
+        }
+      }
     } catch (error) {
       console.error('Error initializing premium state:', error);
     } finally {
@@ -100,6 +120,27 @@ export function PremiumProvider({ children }) {
     return false;
   }, []);
 
+  // ============================================
+  // DEBUG FUNCTIONS - For testing only
+  // ============================================
+
+  // Toggle premium status for testing
+  const debugTogglePremium = useCallback(async () => {
+    const newValue = !isPremium;
+    setIsPremium(newValue);
+    await AsyncStorage.setItem(DEBUG_PREMIUM_KEY, newValue.toString());
+    console.log(`[DEBUG] Premium toggled to: ${newValue}`);
+    return newValue;
+  }, [isPremium]);
+
+  // Reset daily usage counter for testing
+  const debugResetUsage = useCallback(async () => {
+    setDailyRecommendations(0);
+    setLastUsageDate(null);
+    await AsyncStorage.removeItem(USAGE_STORAGE_KEY);
+    console.log('[DEBUG] Daily usage reset');
+  }, []);
+
   const value = {
     isPremium,
     isLoading,
@@ -113,6 +154,9 @@ export function PremiumProvider({ children }) {
     // Limits
     maxSavedBooks: currentTier.maxSavedBooks,
     recommendationsPerDay: currentTier.recommendationsPerDay,
+    // Debug functions (for testing)
+    debugTogglePremium,
+    debugResetUsage,
   };
 
   return (
